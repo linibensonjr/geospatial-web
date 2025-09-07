@@ -1,172 +1,207 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Add location</title>
-<meta charset="utf-8" />
-<meta name="viewport"
-	content="width=device-width, initial-scale=1.0">
-<!-- Get the leaflet CSS file -->
+{% extends 'base.html' %}
+{% load static %}
 
-<style>
-body {font-family: Arial, Helvetica, sans-serif;}
-* {box-sizing: border-box;}
+{% block title %}Add New Location - Nearby Shops Finder{% endblock %}
 
-/* Button used to open the contact form - fixed at the bottom of the page */
-.open-button {
-  background-color: #555;
-  color: white;
-  padding: 16px 20px;
-  border: none;
-  cursor: pointer;
-  opacity: 0.8;
-  position: fixed;
-  bottom: 23px;
-  right: 28px;
-  width: 280px;
-}
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="hero-section text-center rounded-3 mb-5">
+        <div class="container">
+            <h1><i class="bi bi-plus-circle me-3"></i>Add New Location</h1>
+            <p class="lead">Click on the map to add a new shop or service location</p>
+        </div>
+    </div>
 
-/* The popup form - hidden by default */
-.form-popup {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  right: 15px;
-  border: 3px solid #f1f1f1;
-  z-index: 9;
-}
+    <!-- Instructions Card -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <i class="bi bi-info-circle text-primary me-2"></i>
+                        Instructions
+                    </h5>
+                    <p class="card-text">
+                        Click anywhere on the map to select the location, then fill in the details below. 
+                        The coordinates will be automatically filled when you click on the map.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-/* Add styles to the form container */
-.form-container {
-  max-width: 300px;
-  padding: 10px;
-  background-color: white;
-}
+    <!-- Map Container -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-10">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
 
-/* Full-width input fields */
-.form-container input[type=text], .form-container input[type=password] {
-  width: 100%;
-  padding: 15px;
-  margin: 5px 0 22px 0;
-  border: none;
-  background: #f1f1f1;
-}
+    <!-- Add Location Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        Location Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="addlocation" method="POST" id="addLocationForm">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Location Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="e.g., Coffee Shop, Pharmacy, Restaurant" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="description" name="description" 
+                                       placeholder="Brief description of the location">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="latitude" class="form-label">Latitude *</label>
+                                <input type="number" step="any" class="form-control" id="latitude" name="latitude" 
+                                       placeholder="Click on map to fill" required readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="longitude" class="form-label">Longitude *</label>
+                                <input type="number" step="any" class="form-control" id="longitude" name="longitude" 
+                                       placeholder="Click on map to fill" required readonly>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/allpoints" class="btn btn-outline-secondary me-md-2">
+                                <i class="bi bi-list-ul me-2"></i>View All Locations
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="addBtn" disabled>
+                                <i class="bi bi-plus-circle me-2"></i>Add Location
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-/* When the inputs get focus, do something */
-.form-container input[type=text]:focus, .form-container input[type=password]:focus {
-  background-color: #ddd;
-  outline: none;
-}
-
-/* Set a style for the submit/login button */
-.form-container .btn {
-  background-color: #04AA6D;
-  color: white;
-  padding: 16px 20px;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  margin-bottom:10px;
-  opacity: 0.8;
-}
-
-/* Add a red background color to the cancel button */
-.form-container .cancel {
-  background-color: red;
-}
-
-/* Add some hover effects to buttons */
-.form-container .btn:hover, .open-button:hover {
-  opacity: 1;
-}
-</style>
-
-  <!-- Load Leaflet from CDN -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-    crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
-    integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
-    crossorigin=""></script>
-
-  <!-- Load Esri Leaflet from CDN -->
-  <script src="https://unpkg.com/esri-leaflet@2.5.0/dist/esri-leaflet.js"
+{% block extra_js %}
+<!-- Esri Leaflet Geocoder -->
+<script src="https://unpkg.com/esri-leaflet@2.5.0/dist/esri-leaflet.js"
     integrity="sha512-ucw7Grpc+iEQZa711gcjgMBnmd9qju1CICsRaryvX7HJklK0pGl/prxKvtHwpgm5ZHdvAil7YPxI1oWPOWK3UQ=="
     crossorigin=""></script>
-
-  <!-- Load Esri Leaflet Geocoder from CDN -->
-  <link rel="stylesheet" href="https://unpkg.com/esri-leaflet-geocoder@2.3.3/dist/esri-leaflet-geocoder.css"
-    integrity="sha512-IM3Hs+feyi40yZhDH6kV8vQMg4Fh20s9OzInIIAc4nx7aMYMfo+IenRUekoYsHZqGkREUgx0VvlEsgm7nCDW9g=="
-    crossorigin="">
-  <script src="https://unpkg.com/esri-leaflet-geocoder@2.3.3/dist/esri-leaflet-geocoder.js"
+<script src="https://unpkg.com/esri-leaflet-geocoder@2.3.3/dist/esri-leaflet-geocoder.js"
     integrity="sha512-HrFUyCEtIpxZloTgEKKMq4RFYhxjJkCiF5sDxuAokklOeZ68U2NPfh4MFtyIVWlsKtVbK5GD2/JzFyAfvT5ejA=="
     crossorigin=""></script>
 
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-
-
-</head>
-<body>
-<h1>Add location into the database by selecting the location and fill name and description</h1>
-
-<br>
-<a class="btn btn-primary" href="http://localhost:8000/allpoints"> All stored locations </a>
-<br>
-<button class="open-button" onclick="openForm()">Open Form</button>
-
-<div class="form-popup" id="myForm">
-  <form action="addlocation" method="POST" class="form-container">
-    <h1>When you select a location the coordinates are auto filled</h1>
-
-<label for="name"><b>Name</b></label>
-    <input id='name' type="text" placeholder="Name of the place" name="name" required>
-
-    <label for="latitude"><b>Latitude</b></label>
-    <input id='ipid1' type="float" placeholder="latitude" name="latitude" required>
-
-    <label for="longitude"><b>Longitude</b></label>
-    <input id='ipid2' type="float" placeholder="longitude" name="longitude" required>
-
-    <label for="description"><b>Description</b></label>
-    <input id='desc' type="text" placeholder="description" name="description" >
-
-    <button type="submit" class="btn">Setpoint</button>
-  </form>
-</div>
-
-<script>document.getElementById("myForm").style.display = "block";</script>
-
-
-<!--<div id="map"></div>-->
-<!-- Specify the map and it's dimensions -->
-<div id="map" style="width: 1020px; height: 600px"></div>
-
-<!-- Get the leaflet JavaScript file -->
-
 <script>
-var map = L.map('map').setView([11,79], 7);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
-
-  var gcs = L.esri.Geocoding.geocodeService();
-
-  map.on('click', (e)=>{
-    gcs.reverse().latlng(e.latlng).run((err, res)=>{
-      if(err) return;
-      L.marker(res.latlng).addTo(map).bindPopup(res.address.Match_addr).openPopup();
-      var l1=parseFloat(res.latlng['lat']);
-      var l2=parseFloat(res.latlng['lng']);
-      document.getElementById("ipid1").value=l1;
-      document.getElementById("ipid2").value=l2;      
+    // Initialize map
+    var map = L.map('map').setView([11, 79], 7);
+    
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Initialize geocoding service
+    var gcs = L.esri.Geocoding.geocodeService();
+    
+    // Map click handler
+    map.on('click', function(e) {
+        // Clear existing markers
+        map.eachLayer(function(layer) {
+            if (layer instanceof L.Marker) {
+                map.removeLayer(layer);
+            }
+        });
+        
+        // Reverse geocode the clicked location
+        gcs.reverse().latlng(e.latlng).run(function(err, res) {
+            if (err) return;
+            
+            // Add marker
+            var marker = L.marker(res.latlng).addTo(map);
+            marker.bindPopup(res.address.Match_addr).openPopup();
+            
+            // Fill form fields
+            var lat = parseFloat(res.latlng.lat);
+            var lng = parseFloat(res.latlng.lng);
+            
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            
+            // Enable add button
+            document.getElementById('addBtn').disabled = false;
+            
+            // Show success message
+            showAlert('Location selected! Fill in the details and click "Add Location".', 'success');
+        });
     });
-
-  });
-
-  function openForm() {
-  document.getElementById("myForm").style.display = "block";
-}
-
+    
+    // Show alert function
+    function showAlert(message, type) {
+        var alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto remove after 4 seconds
+        setTimeout(function() {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 4000);
+    }
+    
+    // Form submission handler
+    document.getElementById('addLocationForm').addEventListener('submit', function(e) {
+        var lat = document.getElementById('latitude').value;
+        var lng = document.getElementById('longitude').value;
+        var name = document.getElementById('name').value;
+        
+        if (!lat || !lng) {
+            e.preventDefault();
+            showAlert('Please select a location on the map first.', 'warning');
+            return false;
+        }
+        
+        if (!name.trim()) {
+            e.preventDefault();
+            showAlert('Please enter a location name.', 'warning');
+            return false;
+        }
+        
+        // Show loading state
+        var btn = document.getElementById('addBtn');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding...';
+        btn.disabled = true;
+    });
+    
+    // Form validation
+    document.getElementById('name').addEventListener('input', function() {
+        var name = this.value.trim();
+        var lat = document.getElementById('latitude').value;
+        var lng = document.getElementById('longitude').value;
+        
+        if (name && lat && lng) {
+            document.getElementById('addBtn').disabled = false;
+        } else {
+            document.getElementById('addBtn').disabled = true;
+        }
+    });
 </script>
-</body>
-</html>
+{% endblock %}

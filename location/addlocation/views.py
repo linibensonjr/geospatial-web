@@ -1,14 +1,15 @@
 from django.shortcuts import render
-
 from .models import points
 from django.contrib.gis.geos import Point
-
-from django.http import HttpResponse,HttpResponseRedirect
+from django.http import HttpResponse,HttpResponseRedirect, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 from django.contrib.gis.db.models.functions import Distance
 
 
+def home(request):
+    allpoints = points.objects.all()
+    return render(request, 'home.html', {'points': allpoints})
 @csrf_exempt
 def addpoint(request):
     if request.method =='POST':
@@ -42,10 +43,26 @@ def viewpoints(request):
 
 def allpoints(request):
     allpoints=points.objects.all()
-    names=[i for i in allpoints]
-    name=[i.name for i in names]
-    lo=[i.location for i in names]
-    xy=[[j for j in i] for i in lo]
-    lat=[i[1] for i in xy]
-    long=[i[0] for i in xy]
-    return render(request,'allpoints.html',{'allpoints':allpoints,'name':name,'lat':lat,'long':long})
+    if addpoint:
+        names=[i for i in allpoints]
+        name=[i.name for i in names]
+        lo=[i.location for i in names]
+        xy=[[j for j in i] for i in lo]
+        lat=[i[1] for i in xy]
+        long=[i[0] for i in xy]
+        return render(request,'allpoints.html',{'allpoints':allpoints,'name':name,'lat':lat,'long':long})
+    else:
+        return render(request,'allpoints.html')
+
+def show_point_data(request):
+    x = request.GET.get('x')
+    y = request.GET.get('y')
+    point = Point(float(x), float(y))
+    print(point)
+    data = point.objects.filter(point__distance_lte=(point, 10)).first()
+    return render(request, 'allpoints.html', {'data': data})
+
+def map(request):
+    sh_point = points.objects.all()
+    context = {'pointy': sh_point}
+    return render(request, 'allpoints.html', context)

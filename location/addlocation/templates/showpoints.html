@@ -1,36 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Show points</title>
-<meta charset="utf-8" />
-<meta name="viewport"
-	content="width=device-width, initial-scale=1.0">
-<!-- Get the leaflet CSS file -->
+{% extends 'base.html' %}
 
-
-  <!-- Load Leaflet from CDN -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
-    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
-    crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
-    integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
-    crossorigin=""></script>
-</head>
-<body>
+{% block content %}
+    <div class="container">
 <h1>Nearby location name </h1>
-<script>
-var points="{{allpoints|safe}}";
 
-console.log(points);
+{% for p in points %}
+<p>{{ p.name }}</p>
+{% endfor %}
+<script>
+var points="Query all {{points|safe}}";
+console.log(points)
+
 var names=[
-{% for point in allpoints %}
-"{{point.name}}",
+{% for point in points %}
+"{{point.name}}","{{point.location.x}}",
 {% endfor%}
 ]
-console.log(names);
+console.log('kl',names)
 var loc=[
-{% for point in allpoints %}
-"{{point.location}}",
+{% for point in points %}
+
 
 {% endfor%}
 ]
@@ -38,7 +27,7 @@ var loc=[
 </script>
 <ul>
 {% for point in allpoints %}
-<li>{{point.name}}
+<li>{{points.name}}
 </li>
 {% endfor %}
 </ul>
@@ -50,18 +39,19 @@ var loc=[
 <a class="btn btn-primary" href="http://localhost:8000/addlocation"> Add new location </a>
 <br>
 <div id="map" style="width: 100%; height: 600px"></div>
+    </div>
 <script>
-  var lat={{lat|safe}};
-  var long={{long|safe}};
-  var map = L.map('map').setView([11,79], 7);
+  var lat={{allpoint.lat|safe}}
+  long={{allpoint.long|safe}}
+  map = L.map('map').setView([11,79], 7);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
-  
+
   for(i=0;i<lat.length;i++){
 	L.marker([lat[i],long[i]]).addTo(map).bindPopup(names[i]).openPopup();
   }
   </script>
-</body>
-</html>
+
+{% endblock %}
